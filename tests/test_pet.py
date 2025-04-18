@@ -1,8 +1,8 @@
-from http.client import responses
-
 import allure
 import jsonschema
 import requests
+
+from tests.conftest import create_pet
 from .schemas.pet_schema import PET_SCHEMA
 
 BASE_URL = 'http://5.181.109.28:9090/api/v3'
@@ -79,10 +79,57 @@ class TestPet:
             jsonschema.validate(response_json, PET_SCHEMA)
         with allure.step('Проверка JSON ответа'):
             assert response_json["id"] == payload["id"], 'id тела не совпадает с id ответа'
-            assert response_json["name"] == payload["name"]
+            assert response_json["name"] == payload["name"], 'name в теле не совпадает с name в ответе'
             assert response_json["category"]["id"] == payload["category"]["id"]
             assert response_json["category"]["name"] == payload["category"]["name"]
             assert response_json["photoUrls"] == payload["photoUrls"]
             assert response_json["tags"][0]["id"] == payload["tags"][0]["id"]
             assert response_json["tags"][0]["name"] == payload["tags"][0]["name"]
-            assert response_json["status"] == payload["status"]
+            assert response_json["status"] == payload["status"], 'Status тела не совпадает с Status ответа'
+
+    @allure.title('Получение информации по ID')
+    def test_get_pet_id(self, create_pet):
+        with allure.step('Получение ID питомца'):
+            id_pet = create_pet["id"]
+        with allure.step('Отправка запроса на получение информации'):
+            response = requests.get(url=f'{BASE_URL}/pet/{id_pet}')
+        with allure.step('Проверка статуса ответа'):
+            assert response.status_code == 200, 'Статус код ответа неверный'
+        with allure.step('Проверка JSON ответа'):
+            assert response.json()["id"] == id_pet
+
+    @allure.title('Обновление информации о питомце')
+    def test_update_pet(self, create_pet):
+        with allure.step('Получение ID питомца'):
+            id_pet = create_pet["id"]
+            payload = {
+                "id": id_pet,
+                "name": "Buddy Updated",
+                "status": "sold"
+            }
+        with allure.step('Отправка запроса на обновление информации о питомце'):
+            response = requests.put(url=f'{BASE_URL}/pet', json=payload)
+            response_json = response.json()
+        with allure.step('Проверка статуса ответа'):
+            assert response.status_code == 200, 'Статус код ответа неверный'
+            jsonschema.validate(response_json, PET_SCHEMA)
+        with allure.step('Проверка JSON ответа'):
+            assert response_json["name"] != create_pet["name"], 'Имя питомца не изменилось'
+            assert response_json["status"] != create_pet["status"], 'Статус не поменялся'
+            assert response_json["id"] == payload["id"], 'id тела не совпадает с id ответа'
+            assert response_json["name"] == payload["name"], 'Имя питомца не совпадает с именем в ответе'
+            assert response_json["status"] == payload["status"], 'Status тела не совпадает с Status ответа'
+
+    @allure.title('Удаление питомца')
+    def test_delete_pet(self, create_pet):
+        with allure.step('Получение ID питомца'):
+            id_pet = create_pet["id"]
+        with allure.step('Отправка запроса на удаление'):
+            response = requests.delete(url=f'{BASE_URL}/pet/{id_pet}')
+        with allure.step('Проверка статуса ответа'):
+            assert response.status_code == 200, 'Статус код ответа неверный'
+        with allure.step('Проверка текста ответа'):
+            assert response.text == 'Pet deleted', 'Текст ответа неверный'
+        with allure.step('Проверка что информации о питомце нет'):
+            response_info = requests.get(url=f'{BASE_URL}/pet/{id_pet}')
+            assert response_info.status_code == 404, 'Питомец не удален'
