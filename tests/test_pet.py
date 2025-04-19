@@ -1,8 +1,9 @@
 import allure
 import jsonschema
+import pytest
 import requests
 
-from tests.conftest import create_pet
+from conftest import create_pet
 from .schemas.pet_schema import PET_SCHEMA
 
 BASE_URL = 'http://5.181.109.28:9090/api/v3'
@@ -133,3 +134,30 @@ class TestPet:
         with allure.step('Проверка что информации о питомце нет'):
             response_info = requests.get(url=f'{BASE_URL}/pet/{id_pet}')
             assert response_info.status_code == 404, 'Питомец не удален'
+
+    @allure.title('Получение списка питомцев по статусу')
+    @pytest.mark.parametrize(
+        "status, expected_status_code",
+        [
+            ("available", 200),
+            ("pending", 200),
+            ("sold", 200),
+            ("ass", 400),
+            ("", 400)
+        ]
+    )
+    def test_get_pet_list_for_status(self, status, expected_status_code):
+        with allure.step(f'Отправка запроса на получение питомцев по статусу {status}'):
+            response = requests.get(url=f'{BASE_URL}/pet/findByStatus', params={"status": status})
+        with allure.step('Проверка статуса ответа'):
+            assert response.status_code == expected_status_code, 'Статус код ответа неверный'
+        with allure.step('Проверка формата данных ответа'):
+            if response.status_code == 200:
+                assert isinstance(response.json(), list), 'формат ответ не массив'
+            elif response.status_code == 400:
+                assert isinstance(response.json(), dict), 'формат ответа не объект'
+
+
+
+
+
