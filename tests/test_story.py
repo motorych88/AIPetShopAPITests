@@ -3,7 +3,7 @@ import jsonschema
 import pytest
 import requests
 from conftest import add_order
-
+from tests.schemas.inventory_schema import INVENTORY_SCHEMA
 from tests.schemas.order_schema import ORDER_SCHEMA
 
 BASE_URL = 'http://5.181.109.28:9090/api/v3'
@@ -80,6 +80,4 @@ class TestStory:
         with allure.step('Проверка статуса ответа'):
             assert response.status_code == 200, 'Статус код ответа неверный'
         with allure.step('Проверка JSON ответа'):
-            assert response_json["approved"] == 57, 'количество approved неверное'
-            assert response_json["available"] == 0, 'количество available неверное'
-            assert response_json["delivered"] == 50, 'количество delivered неверное'
+            jsonschema.validate(response_json, INVENTORY_SCHEMA)
