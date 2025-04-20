@@ -63,14 +63,14 @@ class TestPet:
             assert response_json["status"] == payload["status"]
 
     @allure.title('Добавление нового питомца c полным телом')
-    def test_add_fullpayload_pet(self):
+    def test_add_full_payload_pet(self):
         with allure.step('Отправка запроса на добавление'):
             payload = {
-                "id": 10,
+                "id": 11,
                 "name": "doggie",
                 "category": {"id": 1, "name": "Dogs"},
                 "photoUrls": ["string"],
-                "tags": [{"id": 0, "name": "string"}],
+                "tags": [{"id": 1, "name": "Bulldog"}],
                 "status": "available"
             }
             response = requests.post(url=f'{BASE_URL}/pet', json=payload)
@@ -156,6 +156,29 @@ class TestPet:
                 assert isinstance(response.json(), list), 'формат ответ не массив'
             elif response.status_code == 400:
                 assert isinstance(response.json(), dict), 'формат ответа не объект'
+
+    @allure.title('Получение списка питомцев по тэгу')
+    @pytest.mark.parametrize(
+        "tags, expected_status_code",
+        [
+            ("Bulldog", 200),
+            ("Chow-chow", 200),
+            ("Ass", 200),
+            ("", 400)
+        ]
+    )
+    def test_get_pet_list_for_tags(self, tags, expected_status_code):
+        with allure.step(f'Отправка запроса на получение питомцев по тэгу {tags}'):
+            response = requests.get(url=f'{BASE_URL}/pet/findByTags', params={"tags": tags})
+        with allure.step('Проверка статуса ответа'):
+            assert response.status_code == expected_status_code, 'Статус код ответа неверный'
+        with allure.step('Проверка формата данных ответа'):
+            if response.status_code == 200:
+                assert isinstance(response.json(), list), 'формат ответ не массив'
+            elif response.status_code == 400:
+                assert response.text == 'No tags provided. Try again?'
+
+
 
 
 
