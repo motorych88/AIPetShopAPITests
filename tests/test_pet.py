@@ -170,21 +170,21 @@ class TestPet:
             assert first_pet_response["tags"][0]["name"] == create_pet["tags"][0]["name"]
             assert first_pet_response["tags"][0]["id"] == create_pet["tags"][0]["id"]
 
-    @allure.title('Получение списка питомцев по несуществующему тэгу')
+    @allure.title('Получение списка питомцев по несуществующему и пустому тэгу')
     @pytest.mark.parametrize(
-        "tags, expected_status_code, expected_responce",
+        "tags, expected_status_code, expected_response",
         [
             ("Ass", 200, []),
             ("", 400, 'No tags provided. Try again?')
         ]
     )
-    def test_get_pet_list_for_tags(self, tags, expected_status_code, expected_responce):
-        with allure.step(f'Отправка запроса на получение питомцев по тэгу {tags}'):
+    def test_get_nonexistent_pet_list_for_tags(self, tags, expected_status_code, expected_response):
+        with allure.step(f'Отправка запроса на получение питомцев по несуществующему и пустому тэгу {tags}'):
             response = requests.get(url=f'{BASE_URL}/pet/findByTags', params={"tags": tags})
         with allure.step('Проверка статуса ответа'):
             assert response.status_code == expected_status_code, 'Статус код ответа неверный'
         with allure.step('Проверка формата данных ответа'):
             if expected_status_code == 200:
-                assert response.json() == expected_responce, 'формат ответ не массив'
+                assert response.json() == expected_response, 'формат ответ не массив'
             elif expected_status_code == 400:
-                assert response.text == expected_responce, 'Текст ответа неверный'
+                assert response.text == expected_response, 'Текст ответа неверный'
