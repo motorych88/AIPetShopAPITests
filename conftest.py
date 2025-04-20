@@ -23,7 +23,8 @@ def create_pet():
     }
     response = requests.post(url=f'{BASE_URL}/pet', json=payload)
     response_json = response.json()
-    return response_json
+    yield response_json
+    requests.delete(url=f'{BASE_URL}/pet/{faker_id}')
 
 
 @pytest.fixture(scope="function")
