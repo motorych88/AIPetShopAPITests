@@ -158,29 +158,33 @@ class TestPet:
                 assert isinstance(response.json(), dict), 'формат ответа не объект'
 
     @allure.title('Получение списка питомцев по тэгу')
+    def test_get_pet_list_for_tags(self, create_pet):
+        tags = create_pet["tags"][0]["name"]
+        with allure.step(f'Отправка запроса на получение питомцев по тэгу {tags}'):
+            response = requests.get(url=f'{BASE_URL}/pet/findByTags', params={"tags": tags})
+            response_json = response.json()
+        with allure.step('Проверка статуса ответа'):
+            assert response.status_code == 200, 'Статус код ответа неверный'
+            first_pet_response = response_json[0]
+        with allure.step('Проверка статуса ответа'):
+            assert first_pet_response["tags"][0]["name"] == create_pet["tags"][0]["name"]
+            assert first_pet_response["tags"][0]["id"] == create_pet["tags"][0]["id"]
+
+    @allure.title('Получение списка питомцев по несуществующему тэгу')
     @pytest.mark.parametrize(
-        "tags, expected_status_code",
+        "tags, expected_status_code, expected_responce",
         [
-            ("Bulldog", 200),
-            ("Chow-chow", 200),
-            ("Ass", 200),
-            ("", 400)
+            ("Ass", 200, []),
+            ("", 400, 'No tags provided. Try again?')
         ]
     )
-    def test_get_pet_list_for_tags(self, tags, expected_status_code):
+    def test_get_pet_list_for_tags(self, tags, expected_status_code, expected_responce):
         with allure.step(f'Отправка запроса на получение питомцев по тэгу {tags}'):
             response = requests.get(url=f'{BASE_URL}/pet/findByTags', params={"tags": tags})
         with allure.step('Проверка статуса ответа'):
             assert response.status_code == expected_status_code, 'Статус код ответа неверный'
         with allure.step('Проверка формата данных ответа'):
-            if response.status_code == 200:
-                assert isinstance(response.json(), list), 'формат ответ не массив'
-            elif response.status_code == 400:
-                assert response.text == 'No tags provided. Try again?'
-
-
-
-
-
-
-
+            if expected_status_code == 200:
+                assert response.json() == expected_responce, 'формат ответ не массив'
+            elif expected_status_code == 400:
+                assert response.text == expected_responce, 'Текст ответа неверный'
