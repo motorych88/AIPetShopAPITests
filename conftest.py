@@ -39,3 +39,30 @@ def add_order():
     response = requests.post(url=f'{BASE_URL}/store/order', json=payload)
     response_json = response.json()
     return response_json
+
+
+@pytest.fixture(scope="function")
+def create_user():
+    faker = Faker()
+    faker_id = faker.random_number()
+    faker_name = faker.first_name()
+    faker_first_name = faker.first_name()
+    faker_last_name = faker.last_name()
+    faker_email = faker.email()
+    faker_password = faker.password()
+    faker_status = faker.random_number()
+
+    payload = {
+        "id": faker_id,
+        "username": faker_name,
+        "firstName": faker_first_name,
+        "lastName": faker_last_name,
+        "email": faker_email,
+        "password": faker_password,
+        "phone": "12345",
+        "userStatus": faker_status
+    }
+    response = requests.post(url=f'{BASE_URL}/user', json=payload)
+    response_json = response.json()
+    yield response_json
+    requests.delete(url=f'{BASE_URL}/pet/{faker_name}')
