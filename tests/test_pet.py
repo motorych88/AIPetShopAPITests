@@ -63,14 +63,14 @@ class TestPet:
             assert response_json["status"] == payload["status"]
 
     @allure.title('Добавление нового питомца c полным телом')
-    def test_add_fullpayload_pet(self):
+    def test_add_full_payload_pet(self):
         with allure.step('Отправка запроса на добавление'):
             payload = {
-                "id": 10,
+                "id": 11,
                 "name": "doggie",
                 "category": {"id": 1, "name": "Dogs"},
                 "photoUrls": ["string"],
-                "tags": [{"id": 0, "name": "string"}],
+                "tags": [{"id": 1, "name": "Bulldog"}],
                 "status": "available"
             }
             response = requests.post(url=f'{BASE_URL}/pet', json=payload)
@@ -157,7 +157,34 @@ class TestPet:
             elif response.status_code == 400:
                 assert isinstance(response.json(), dict), 'формат ответа не объект'
 
+    @allure.title('Получение списка питомцев по тэгу')
+    def test_get_pet_list_for_tags(self, create_pet):
+        tags = create_pet["tags"][0]["name"]
+        with allure.step(f'Отправка запроса на получение питомцев по тэгу {tags}'):
+            response = requests.get(url=f'{BASE_URL}/pet/findByTags', params={"tags": tags})
+            response_json = response.json()
+        with allure.step('Проверка статуса ответа'):
+            assert response.status_code == 200, 'Статус код ответа неверный'
+            first_pet_response = response_json[0]
+        with allure.step('Проверка статуса ответа'):
+            assert first_pet_response["tags"][0]["name"] == create_pet["tags"][0]["name"]
+            assert first_pet_response["tags"][0]["id"] == create_pet["tags"][0]["id"]
 
-
-
-
+    @allure.title('Получение списка питомцев по несуществующему и пустому тэгу')
+    @pytest.mark.parametrize(
+        "tags, expected_status_code, expected_response",
+        [
+            ("Ass", 200, []),
+            ("", 400, 'No tags provided. Try again?')
+        ]
+    )
+    def test_get_nonexistent_pet_list_for_tags(self, tags, expected_status_code, expected_response):
+        with allure.step(f'Отправка запроса на получение питомцев по несуществующему и пустому тэгу {tags}'):
+            response = requests.get(url=f'{BASE_URL}/pet/findByTags', params={"tags": tags})
+        with allure.step('Проверка статуса ответа'):
+            assert response.status_code == expected_status_code, 'Статус код ответа неверный'
+        with allure.step('Проверка формата данных ответа'):
+            if expected_status_code == 200:
+                assert response.json() == expected_response, 'формат ответ не массив'
+            elif expected_status_code == 400:
+                assert response.text == expected_response, 'Текст ответа неверный'
